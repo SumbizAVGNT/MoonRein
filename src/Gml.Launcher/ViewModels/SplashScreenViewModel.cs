@@ -5,7 +5,6 @@ using Gml.Launcher.Assets;
 using Gml.Launcher.Core.Exceptions;
 using Gml.Launcher.Core.Services;
 using Gml.Launcher.ViewModels.Base;
-using Gml.Web.Api.Domains.System;
 using GmlCore.Interfaces.Storage;
 using ReactiveUI.Fody.Helpers;
 using Sentry;
@@ -15,9 +14,6 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Gml.Client.Interfaces;
@@ -84,9 +80,6 @@ public class SplashScreenViewModel : WindowViewModelBase
     {
         try
         {
-            var osType = _systemService.GetOsType();
-            var osArch = RuntimeInformation.ProcessArchitecture;
-
             await _systemService.LoadSystemData();
 
             ChangeState(_localizationService.GetString(SystemConstants.BackendChecking), true);
@@ -104,27 +97,6 @@ public class SplashScreenViewModel : WindowViewModelBase
             {
                 ChangeState(_localizationService.GetString(SystemConstants.SentrySDKInit), true);
                 await InitializeSentryAsync();
-            }
-
-            if (!_manager.SkipUpdate && !_backendChecker.IsOffline)
-            {
-                ChangeState(_localizationService.GetString(SystemConstants.CheckUpdates), true);
-                var versionInfo = await CheckActualVersion(osType, osArch);
-
-                if (!versionInfo.IsActuallVersion)
-                {
-                    ChangeState(_localizationService.GetString(SystemConstants.InstallingUpdates), false);
-
-                    var exePath = Process.GetCurrentProcess().MainModule?.FileName
-                                  ?? throw new Exception(SystemConstants.FailedOs);
-
-                    var process = _manager.ProgressChanged.Subscribe(
-                        percentage => Progress = Convert.ToInt16(percentage));
-
-                    await _manager.UpdateCurrentLauncher(versionInfo, osType, Path.GetFileName(exePath));
-
-                    process.Dispose();
-                }
             }
 
             if (!_backendChecker.IsOffline)
@@ -176,20 +148,6 @@ public class SplashScreenViewModel : WindowViewModelBase
         await _storageService.SetAsync<ILauncherUser?>(StorageConstants.User, null).ConfigureAwait(false);
 
         return userData.User.IsAuth;
-    }
-
-    private async Task<(IVersionFile? ActualVersion, bool IsActuallVersion)> CheckActualVersion(OsType osType,
-        Architecture osArch)
-    {
-        var actualVersion = await _manager.GetActualVersion(osType, osArch);
-
-        if (actualVersion is null) return (null, true);
-
-        var version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0);
-
-        return actualVersion.Version.Equals(version.ToString())
-            ? (actualVersion, true)
-            : (actualVersion, false);
     }
 
     private void ChangeState(string text, bool isInfinity)

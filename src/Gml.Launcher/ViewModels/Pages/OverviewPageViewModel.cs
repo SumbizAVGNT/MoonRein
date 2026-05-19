@@ -29,6 +29,8 @@ using System.Net.Http;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -37,6 +39,7 @@ using Gml.Client.Interfaces;
 using Gml.Dto.Messages;
 using Gml.Dto.News;
 using Gml.Dto.Profile;
+using Gml.Web.Api.Domains.System;
 using GameLoader = GmlCore.Interfaces.Enums.GameLoader;
 using IUser = GmlCore.Interfaces.User.IUser;
 
@@ -57,6 +60,7 @@ public class OverviewPageViewModel : PageViewModelBase
     private readonly IBackendChecker _backendChecker;
     private readonly ISettingsService _settingsService;
     private readonly IDisposable? _speedSubscription;
+    private IVersionFile? _pendingVersion;
 
     internal OverviewPageViewModel(IScreen screen,
         ILauncherUser user,
@@ -146,6 +150,8 @@ public class OverviewPageViewModel : PageViewModelBase
 
         PlayCommand = ReactiveCommand.CreateFromTask(StartGame);
 
+        UpdateCommand = ReactiveCommand.CreateFromTask(PerformUpdate);
+
         RemoveCommand = ReactiveCommand.CreateFromTask(RemoveGame);
 
         ReinstallCommand = ReactiveCommand.CreateFromTask(ReinstallGame);
@@ -208,6 +214,8 @@ public class OverviewPageViewModel : PageViewModelBase
     }
 
     [Reactive] public bool IsModsButtonVisible { get; private set; }
+    [Reactive] public bool IsUpdateAvailable { get; set; }
+    [Reactive] public string? UpdateVersion { get; set; }
 
     public new string Title => LocalizationService.GetString(SystemConstants.MainPageTitle);
 
@@ -219,6 +227,7 @@ public class OverviewPageViewModel : PageViewModelBase
     public ICommand ReinstallCommand { get; set; }
     public ICommand GoSettingsCommand { get; set; }
     public ICommand HomeCommand { get; set; }
+    public ICommand UpdateCommand { get; set; }
     public ListViewModel ListViewModel { get; } = new();
     public ILauncherUser User { get; }
     public bool BackendIsActive { get; }
@@ -300,6 +309,13 @@ public class OverviewPageViewModel : PageViewModelBase
 
     private async Task StartGame()
     {
+        if (IsUpdateAvailable)
+        {
+            ShowError(SystemConstants.Error,
+                LocalizationService.GetString(SystemConstants.MinecraftUpdateRequired));
+            return;
+        }
+
         var tokenSource = new CancellationTokenSource();
         var cancellationToken = tokenSource.Token;
         var disposable =  new CompositeDisposable();
@@ -485,6 +501,7 @@ public class OverviewPageViewModel : PageViewModelBase
         {
             await LoadProfiles();
             await LoadNews();
+            await CheckForUpdates();
 
             if (!_backendChecker.IsOffline)
             {
@@ -611,5 +628,73 @@ public class OverviewPageViewModel : PageViewModelBase
         await Task.Delay(TimeSpan.FromSeconds(5));
 
         LoadData();
+    }
+
+    private async Task CheckForUpdates()
+    {
+        try
+        {
+            if (_backendChecker.IsOffline) return;
+
+            var osType = _systemService.GetOsType();
+            var osArch = RuntimeInformation.ProcessArchitecture;
+
+            var actualVersion = await _gmlManager.GetActualVersion(osType, osArch);
+
+            if (actualVersion is null) return;
+
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString();
+
+            if (currentVersion == actualVersion.Version) return;
+
+            _pendingVersion = actualVersion;
+            IsUpdateAvailable = true;
+            UpdateVersion = actualVersion.Version;
+        }
+        catch (Exception exception)
+        {
+            SentrySdk.CaptureException(exception);
+            Console.WriteLine(exception);
+        }
+    }
+
+    private async Task PerformUpdate()
+    {
+        try
+        {
+            if (_pendingVersion is null) return;
+
+            IsUpdateAvailable = false;
+
+            var osType = _systemService.GetOsType();
+
+            var exePath = Process.GetCurrentProcess().MainModule?.FileName
+                          ?? throw new Exception(SystemConstants.FailedOs);
+
+            UpdateProgress(
+                LocalizationService.GetString(SystemConstants.InstallingUpdates),
+                string.Empty, true);
+
+            var process = _gmlManager.ProgressChanged.Subscribe(
+                percentage => LoadingPercentage = percentage);
+
+            await _gmlManager.UpdateCurrentLauncher(
+                (_pendingVersion, false),
+                osType,
+                Path.GetFileName(exePath));
+
+            process.Dispose();
+        }
+        catch (Exception exception)
+        {
+            IsUpdateAvailable = true;
+            ShowError(SystemConstants.Error, exception.Message);
+            SentrySdk.CaptureException(exception);
+            Console.WriteLine(exception);
+        }
+        finally
+        {
+            UpdateProgress(string.Empty, string.Empty, false);
+        }
     }
 }

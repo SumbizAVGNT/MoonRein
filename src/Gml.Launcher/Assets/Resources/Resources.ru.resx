@@ -337,4 +337,13 @@
   <data name="ProfileSuccessRemoved" xml:space="preserve">
     <value>Профиль успешно удален</value>
   </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>Вышло новое обновление</value>
+  </data>
+  <data name="UpdateButton" xml:space="preserve">
+    <value>Обновить</value>
+  </data>
+  <data name="MinecraftUpdateRequired" xml:space="preserve">
+    <value>Для игры обновите лаунчер до последней версии</value>
+  </data>
 </root>

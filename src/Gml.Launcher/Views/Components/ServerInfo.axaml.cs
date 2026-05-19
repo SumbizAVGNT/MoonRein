@@ -56,6 +56,33 @@ public class ServerInfo : TemplatedControl
     public static readonly StyledProperty<ICommand> RemoveCommandProperty = AvaloniaProperty.Register<ServerInfo, ICommand>(
         nameof(RemoveCommand));
 
+    public static readonly StyledProperty<bool> IsUpdateAvailableProperty =
+        AvaloniaProperty.Register<ServerInfo, bool>(nameof(IsUpdateAvailable));
+
+    public static readonly StyledProperty<string> UpdateVersionProperty =
+        AvaloniaProperty.Register<ServerInfo, string>(nameof(UpdateVersion));
+
+    public static readonly StyledProperty<ICommand> UpdateCommandProperty =
+        AvaloniaProperty.Register<ServerInfo, ICommand>(nameof(UpdateCommand));
+
+    public ICommand? UpdateCommand
+    {
+        get => GetValue(UpdateCommandProperty);
+        set => SetValue(UpdateCommandProperty, value);
+    }
+
+    public string UpdateVersion
+    {
+        get => GetValue(UpdateVersionProperty);
+        set => SetValue(UpdateVersionProperty, value);
+    }
+
+    public bool IsUpdateAvailable
+    {
+        get => GetValue(IsUpdateAvailableProperty);
+        set => SetValue(IsUpdateAvailableProperty, value);
+    }
+
     public ICommand RemoveCommand
     {
         get => GetValue(RemoveCommandProperty);

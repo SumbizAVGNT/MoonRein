@@ -339,4 +339,13 @@ To exit offline mode, make sure that the server is available, and then restart t
   <data name="ProfileSuccessRemoved" xml:space="preserve">
     <value>ProfileSuccessRemoved</value>
   </data>
+  <data name="UpdateAvailable" xml:space="preserve">
+    <value>New update available</value>
+  </data>
+  <data name="UpdateButton" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="MinecraftUpdateRequired" xml:space="preserve">
+    <value>Please update the launcher to the latest version</value>
+  </data>
 </root>
