@@ -15,6 +15,7 @@ using Gml.Launcher.Models;
 using Gml.Launcher.ViewModels.Base;
 using Gml.Launcher.ViewModels.Components;
 using GmlCore.Interfaces.Enums;
+using IVersionFile = GmlCore.Interfaces.Storage.IVersionFile;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using Sentry;

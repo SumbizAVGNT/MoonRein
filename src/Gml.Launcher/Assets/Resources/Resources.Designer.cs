@@ -716,5 +716,29 @@ namespace Gml.Launcher.Assets.Resources {
                 return ResourceManager.GetString("ProfileSuccessRemoved", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to A new update is available.
+        /// </summary>
+        public static string UpdateAvailable {
+            get {
+                return ResourceManager.GetString("UpdateAvailable", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Update.
+        /// </summary>
+        public static string UpdateButton {
+            get {
+                return ResourceManager.GetString("UpdateButton", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Please update the launcher to continue playing.
+        /// </summary>
+        public static string MinecraftUpdateRequired {
+            get {
+                return ResourceManager.GetString("MinecraftUpdateRequired", resourceCulture);
+            }
+        }
     }
 }
